@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <input type="file" name="file" id="file">
+    <div id="chartContainer" style="height: 370px; width: 100%;"></div>
+    <div id='output' style="display: none;"></div>
+    <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+    <script>
+        const $output = document.getElementById('output')
+        document.getElementById('file').onchange = function() {
+            var file = this.files[0];
+            var reader = new FileReader();
+            var data = [];
+            reader.onload = function(progressEvent) {
+                const text = this.result;
+                $output.innerText = text
+    
+                let lines = text.split('\n').slice(3);
+                let dateObject = {};
+                let table = [];
+                let date = '';
+                for (var line = 0; line < lines.length; line++) {
+                    let dateRegExp = new RegExp("^([0-9]{4})([./]{1})([0-9]{1,2})([./]{1})([0-9]{1,2})");
+                    let isDate = dateRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
+                    if (isDate) {
+                        date = lines[line].split('（')[0];
+                        dateObject[date] = 0;
+                    } else {
+                        dateObject[date] += 1;
+                        let tagMatch = lines[line].match(/@.*?(?=[ ]|$)/g);
+                        if (tagMatch) {                
+                            tagMatch.forEach((tag) => {
+                                let lastCount = table.filter(e => e.name == tag)?.length ?? 0;
+                                table.push({date: date, name: tag, count: lastCount + 1 });
+                            });
+                        }
+                    }
+                }
+                
+                var uniqueNameArray = table.map(e => e.name).filter((v, i, a) => a.indexOf(v) === i);
+                uniqueNameArray.forEach((uniqueName) => {
+                    let item = {
+                        type:"line",
+                        axisYType: "secondary",
+                        name: uniqueName.substring(1),
+                        showInLegend: true,
+                        markerSize: 0,
+                        dataPoints: table.filter(e => e.name == uniqueName).map(e => ({ x: new Date(e.date), y: Number(e.count)}))
+                    }
+                    data.push(item);
+                });
+                var chart = new CanvasJS.Chart("chartContainer", {
+                    title: {
+                        text: "每日標記數累加圖"
+                    },
+                    toolTip: {
+                        shared: true
+                    },
+                    legend: {
+                        cursor: "pointer",
+                        verticalAlign: "top",
+                        horizontalAlign: "center",
+                        dockInsidePlotArea: true,
+                        itemclick: toogleDataSeries
+                    },
+                    data: data
+                });
+                chart.render();
+
+                function toogleDataSeries(e){
+                    if (typeof(e.dataSeries.visible) === "undefined" || e.dataSeries.visible) {
+                        e.dataSeries.visible = false;
+                    } else{
+                        e.dataSeries.visible = true;
+                    }
+                    chart.render();
+                }
+            };
+            reader.readAsText(file);
+        };
+    </script>
+</body>
+</html>
