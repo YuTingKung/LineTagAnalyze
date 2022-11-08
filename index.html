@@ -26,18 +26,23 @@
                 let date = '';
                 let uniqueNameFromTitle = [];
                 for (var line = 0; line < lines.length; line++) {
-                    let dateRegExp = new RegExp("^([0-9]{4})([./]{1})([0-9]{1,2})([./]{1})([0-9]{1,2})");
                     let timeRegExp = new RegExp("^([0-9]{2})([.:]{1})([0-9]{2})");
-                    let isDate = dateRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
                     let isTime = timeRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
                     if (isTime) { 
                         let title = lines[line].split('\t')[1];
                         uniqueNameFromTitle.push(title);
                     };
+                }
+                uniqueNameFromTitle = uniqueNameFromTitle.filter((v, i, a) => a.indexOf(v) === i).filter(e => e != null && e.length > 0);
+                let matchNameRegExp = uniqueNameFromTitle.map(e => `@${e}`).join('|');
+                for (var line = 0; line < lines.length; line++) {
+                    let dateRegExp = new RegExp("^([0-9]{4})([./]{1})([0-9]{1,2})([./]{1})([0-9]{1,2})");
+                    let isDate = dateRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
                     if (isDate) {
                         date = lines[line].split('（')[0];
                     } else {
-                        let tagMatch = lines[line].match(/@.*?(?=[ ]|$)/g);
+                        //let tagMatch = lines[line].match(/@.*?(?=[ ]|$)/g); // Match tag by @ and space
+                        let tagMatch = lines[line].match(matchNameRegExp);
                         if (tagMatch) {                
                             tagMatch.forEach((tag) => {
                                 let lastCount = table.filter(e => e.name == tag)?.length ?? 0;
@@ -47,7 +52,6 @@
                     }
                 }
                 // var uniqueNameFromTable = table.map(e => e.name).filter((v, i, a) => a.indexOf(v) === i);
-                uniqueNameFromTitle = uniqueNameFromTitle.filter((v, i, a) => a.indexOf(v) === i);
                 uniqueNameFromTitle.forEach((uniqueName) => {
                     let item = {
                         type:"line",
@@ -55,7 +59,7 @@
                         name: uniqueName?.replace('@', '') ?? '',
                         showInLegend: true,
                         markerSize: 0,
-                        dataPoints: table.filter(e => e.name.replace('@', '') == uniqueName)?.map(e => ({ x: new Date(e.date), y: Number(e.count)})) ?? []
+                        dataPoints: table.filter(e => e.name?.replace('@', '') == uniqueName)?.map(e => ({ x: new Date(e.date), y: Number(e.count)})) ?? []
                     }
                     data.push(item);
                 });
