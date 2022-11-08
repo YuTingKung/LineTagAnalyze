@@ -26,7 +26,7 @@
                 let date = '';
                 let uniqueNameFromTitle = [];
                 for (var line = 0; line < lines.length; line++) {
-                    let timeRegExp = new RegExp("^([0-9]{2})([.:]{1})([0-9]{2})");
+                    let timeRegExp = new RegExp("^([0-9]{2})([:]{1})([0-9]{2})");
                     let isTime = timeRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
                     if (isTime) { 
                         let title = lines[line].split('\t')[1];
@@ -36,18 +36,19 @@
                 uniqueNameFromTitle = uniqueNameFromTitle.filter((v, i, a) => a.indexOf(v) === i).filter(e => e != null && e.length > 0);
                 let matchNameRegExp = uniqueNameFromTitle.map(e => `@${e}`).join('|');
                 for (var line = 0; line < lines.length; line++) {
-                    let dateRegExp = new RegExp("^([0-9]{4})([./]{1})([0-9]{1,2})([./]{1})([0-9]{1,2})");
+                    let dateRegExp = new RegExp("^([0-9]{4})([/]{1})([0-9]{1,2})([/]{1})([0-9]{1,2})");
                     let isDate = dateRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
                     if (isDate) {
-                        date = lines[line].split('（')[0];
+                        date = lines[line].slice(0, -4);
                     } else {
                         //let tagMatch = lines[line].match(/@.*?(?=[ ]|$)/g); // Match tag by @ and space
-                        let tagMatch = lines[line].match(matchNameRegExp);
+                        let tagMatch = lines[line].match(new RegExp(matchNameRegExp, "g"));
                         if (tagMatch) {                
                             tagMatch.forEach((tag) => {
                                 let lastCount = table.filter(e => e.name == tag)?.length ?? 0;
                                 table.push({date: date, name: tag, count: lastCount + 1 });
                             });
+                            if(lines[line].includes("07:24")) console.log(lines[line], tagMatch);
                         }
                     }
                 }
@@ -63,7 +64,7 @@
                     }
                     data.push(item);
                 });
-                data = data.sort((a, b) => b.dataPoints.length - a.dataPoints.length).slice(0, 10);
+                data = data.sort((a, b) => b.dataPoints.length - a.dataPoints.length).slice(0, 12);
                 var chart = new CanvasJS.Chart("chartContainer", {
                     title: {
                         text: "每日標記數累加圖"
