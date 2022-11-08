@@ -48,7 +48,6 @@
                                 let lastCount = table.filter(e => e.name == tag)?.length ?? 0;
                                 table.push({date: date, name: tag, count: lastCount + 1 });
                             });
-                            if(lines[line].includes("07:24")) console.log(lines[line], tagMatch);
                         }
                     }
                 }
