@@ -9,7 +9,7 @@
 <body>
     <input type="file" name="file" id="file">
     <div id="chartContainer" style="height: 370px; width: 100%;"></div>
-    <div id='output' style="display: none;"></div>
+    <div id="output"></div>
     <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
     <script>
         const $output = document.getElementById('output')
@@ -19,20 +19,24 @@
             var data = [];
             reader.onload = function(progressEvent) {
                 const text = this.result;
-                $output.innerText = text
+                // $output.innerText = text // This line will show all text on screen, but the screen will get stocked if txt is too large.
     
                 let lines = text.split('\n').slice(3);
-                let dateObject = {};
                 let table = [];
                 let date = '';
+                let uniqueNameFromTitle = [];
                 for (var line = 0; line < lines.length; line++) {
                     let dateRegExp = new RegExp("^([0-9]{4})([./]{1})([0-9]{1,2})([./]{1})([0-9]{1,2})");
+                    let timeRegExp = new RegExp("^([0-9]{2})([.:]{1})([0-9]{2})");
                     let isDate = dateRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
+                    let isTime = timeRegExp.test(lines[line].substring(0, 10).split(' ')[0]);
+                    if (isTime) { 
+                        let title = lines[line].split('\t')[1];
+                        uniqueNameFromTitle.push(title);
+                    };
                     if (isDate) {
                         date = lines[line].split('（')[0];
-                        dateObject[date] = 0;
                     } else {
-                        dateObject[date] += 1;
                         let tagMatch = lines[line].match(/@.*?(?=[ ]|$)/g);
                         if (tagMatch) {                
                             tagMatch.forEach((tag) => {
@@ -42,19 +46,20 @@
                         }
                     }
                 }
-                
-                var uniqueNameArray = table.map(e => e.name).filter((v, i, a) => a.indexOf(v) === i);
-                uniqueNameArray.forEach((uniqueName) => {
+                // var uniqueNameFromTable = table.map(e => e.name).filter((v, i, a) => a.indexOf(v) === i);
+                uniqueNameFromTitle = uniqueNameFromTitle.filter((v, i, a) => a.indexOf(v) === i);
+                uniqueNameFromTitle.forEach((uniqueName) => {
                     let item = {
                         type:"line",
                         axisYType: "secondary",
-                        name: uniqueName.substring(1),
+                        name: uniqueName?.replace('@', '') ?? '',
                         showInLegend: true,
                         markerSize: 0,
-                        dataPoints: table.filter(e => e.name == uniqueName).map(e => ({ x: new Date(e.date), y: Number(e.count)}))
+                        dataPoints: table.filter(e => e.name.replace('@', '') == uniqueName)?.map(e => ({ x: new Date(e.date), y: Number(e.count)})) ?? []
                     }
                     data.push(item);
                 });
+                data = data.sort((a, b) => b.dataPoints.length - a.dataPoints.length).slice(0, 10);
                 var chart = new CanvasJS.Chart("chartContainer", {
                     title: {
                         text: "每日標記數累加圖"
